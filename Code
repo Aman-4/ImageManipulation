@@ -1,0 +1,127 @@
+# Name: Aman Anand
+######################################################
+import requests
+from PIL import Image, ImageDraw, ImageFont
+from io import BytesIO
+
+# retrieves an image file from the web and returns an Image object
+def get_web_image(url):
+  resp = requests.get(url)
+  img_data = BytesIO(resp.content)
+  return Image.open(img_data)
+
+# paste function 
+def paste_image(source, destination, x, y, omit_color):
+  source = source.resize((200, 300))
+  print(source.size)
+  w,h = source.size
+  print(source.size, destination.size)
+  for i in range(w):
+    for k in range(h):
+      if source.mode == "RGBA":
+        if omit_color == "transparent":
+          r,g,b,a = source.getpixel((i,k))
+          if a != 0:
+            destination.putpixel((i+x, k+y), (r,g,b,a))
+        else:
+          if source.getpixel((i,k))!= omit_color:
+            r,g,b,a = source.getpixel((i,k))
+            destination.putpixel((i+x, k+y), (r,g,b,a))
+      elif source.mode == "RGB":
+         if source.getpixel((i,k))!= omit_color:
+            r,g,b = source.getpixel((i,k))
+            destination.putpixel((i+x, k+y), (r,g,b))
+  return destination
+
+# grayscale
+def gray(img):
+  new_obj = Image.new(img.mode, img.size)
+  w,h = img.size
+  for i in range(w):
+    for k in range(h):
+      r,g,b,a = img.getpixel((i,k))
+      if(r,g,b)!=(255,255,255):
+        average = int((r+b+g)/3)
+        new_obj.putpixel((i,k), (average, average, average, a))
+  return new_obj
+
+# invert colors
+def invert_color(img):
+  new_obj = Image.new(img.mode, img.size)
+  w,h = img.size
+  for i in range(w):
+    for k in range(h):
+      r,g,b = img.getpixel((i,k))
+      if(r,g,b)!=(255,255,255):
+        new_obj.putpixel((i,k), (255-r,255-g,255-b))
+  return new_obj
+
+# mirror function     
+def mirror(img, axis):
+  new_obj = Image.new(img.mode, img.size)
+  w,h = img.size
+  if axis == "vertical":
+    for i in range(w):
+      for k in range(int(h/2)):
+        t = (h-1)-k
+        s = img.getpixel((i,k))
+        new_obj.putpixel((i,t), s)
+        new_obj.putpixel((i,k), s)
+  else: 
+    for i in range(int(w/2)):
+      for k in range(h):
+        t = (w-1)-i
+        s = img.getpixel((i,k))
+        new_obj.putpixel((t,k), s)
+        new_obj.putpixel((i,k), s)
+  return new_obj
+
+# def flip_image(img):
+#   new_obj = Image.new(img.mode, img.size)
+#   w,h = img.size
+#   for i in range(w):
+#     for k in range(h):
+#       pos = img.getpixel((i,k))
+#       val = (w-1) - i
+#       new_obj.putpixel((val,k+(h-600)), pos)
+  
+def main():
+  # defining background
+  background_img = get_web_image("https://www.xrite.com/-/media/modules/weblog/blog/to-innovate-get-surreal/xrpsurreallinkedin1jpg.jpg")
+  # Accessing text from data file
+  f = open("data.txt", "r")
+  # setting x,y coordinates for text
+  x = 10
+  y = 100
+  d = f.read()
+  draw_img = ImageDraw.Draw(background_img)
+  font = ImageFont.truetype("PaybAck.ttf",48)
+  draw_img.text((x,y), d, font=font, fill=(255,255,255))
+  f.close()
+  # first image
+  first_img = get_web_image("https://mymodernmet.com/wp/wp-content/uploads/2017/12/justin-peters-surreal-digital-collage-17.jpg")
+  first_img.resize((400,400))
+  first_img.save('first.jpg')
+  # second image
+  second_img = get_web_image("https://www.kindpng.com/picc/m/189-1895735_multicolored-buildings-decor-png-clip-art-image-transparent.png")
+  second_img.save('second.png')
+  #third image
+  third_img = get_web_image("https://i.pinimg.com/736x/a0/f1/60/a0f16005f504ce16e4f7bdec21193656.jpg")
+  third_img.save('third.jpg')
+  background_img = paste_image(first_img,background_img, 0,300,(0,255,0))
+  # background_img.save('background2.jpg')
+  background_img = paste_image(second_img,background_img, 200,300,(233, 51, 68))
+  # background_img.save('background2.jpg')
+  background_img = paste_image(third_img,background_img, 400,300,(0,255,0))
+  # background_img.save('background2.jpg')
+  mirror_obj = mirror(first_img, "horizontal")
+  background_img = paste_image(mirror_obj,background_img, 600,300,(0,255,0))
+  # background_img.save('background2.jpg')
+  gray_obj = gray(second_img)
+  background_img = paste_image(gray_obj,background_img, 800,300,(233, 51, 68))
+  # background_img.save('background2.jpg')
+  inv_obj = invert_color(third_img)
+  background_img = paste_image(inv_obj,background_img, 1000,300,(233, 51, 68))
+  background_img.save('background2.jpg')
+
+main()
